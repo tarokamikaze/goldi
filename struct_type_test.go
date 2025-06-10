@@ -3,9 +3,9 @@ package goldi_test
 import (
 	"fmt"
 
-	"github.com/fgrosse/goldi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tarokamikaze/goldi"
 )
 
 func ExampleNewStructType() {
@@ -26,8 +26,6 @@ func ExampleNewStructType() {
 	// foo_3: *goldi_test.Foo
 }
 
-// ExampleNewStructType_ prevents godoc from printing the whole content of this file as example
-func ExampleNewStructType_() {}
 
 var _ = Describe("structType", func() {
 	It("should implement the TypeFactory interface", func() {

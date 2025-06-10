@@ -3,9 +3,9 @@ package goldi_test
 import (
 	"fmt"
 
-	"github.com/fgrosse/goldi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tarokamikaze/goldi"
 )
 
 func ExampleNewConfiguredType() {
@@ -26,8 +26,6 @@ func ExampleNewConfiguredType() {
 	// success!
 }
 
-// ExampleNewConfiguredType_ prevents godoc from printing the whole content of this file as example
-func ExampleNewConfiguredType_() {}
 
 var _ = Describe("configuredType", func() {
 	var embeddedType goldi.TypeFactory

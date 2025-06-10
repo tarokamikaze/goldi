@@ -1,8 +1,8 @@
 package validation_test
 
 import (
-	"github.com/fgrosse/goldi"
-	"github.com/fgrosse/goldi/validation"
+	"github.com/tarokamikaze/goldi"
+	"github.com/tarokamikaze/goldi/validation"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

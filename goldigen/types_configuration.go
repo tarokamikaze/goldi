@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/fgrosse/goldi"
+	"github.com/tarokamikaze/goldi"
 )
 
 // The TypesConfiguration is the struct that holds the complete dependency injection configuration
@@ -31,7 +31,8 @@ func (c *TypesConfiguration) Validate() (err error) {
 
 // Packages returns an alphabetically ordered list of unique package names that are referenced by this type configuration.
 func (c *TypesConfiguration) Packages(additionalPackages ...string) []string {
-	packages := additionalPackages
+	packages := make([]string, 0, len(additionalPackages)+len(c.Types))
+	packages = append(packages, additionalPackages...)
 	seenPackages := goldi.StringSet{}
 	for _, additionalPackage := range additionalPackages {
 		seenPackages.Set(additionalPackage)

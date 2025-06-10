@@ -1,6 +1,6 @@
-module github.com/fgrosse/goldi
+module github.com/tarokamikaze/goldi
 
-go 1.20
+go 1.24.3
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0

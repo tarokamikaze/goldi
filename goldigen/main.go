@@ -1,5 +1,5 @@
 // The goldigen binary
-// See https://github.com/fgrosse/goldi#the-goldigen-binary
+// See https://github.com/tarokamikaze/goldi#the-goldigen-binary
 package main
 
 import (
@@ -17,7 +17,7 @@ import (
 const Version = "1.0.1"
 
 var (
-	app = kingpin.New("goldigen", "The goldi dependency injection container generator.\n\nSee https://github.com/fgrosse/goldi for further information.")
+	app = kingpin.New("goldigen", "The goldi dependency injection container generator.\n\nSee https://github.com/tarokamikaze/goldi for further information.")
 
 	inputFile     = app.Flag("in", "The input yaml file to generate type definitions from").Required().File()
 	outputPath    = app.Flag("out", "The output file to save the generated go code").String()

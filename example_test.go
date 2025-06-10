@@ -1,12 +1,106 @@
 package goldi_test
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/fgrosse/goldi"
-	"github.com/fgrosse/goldi/validation"
+	"github.com/tarokamikaze/goldi"
+	"github.com/tarokamikaze/goldi/validation"
 )
+
+// Example_go124Features demonstrates the new Go 1.24 features in Goldi
+func Example_go124Features() {
+	registry := goldi.NewTypeRegistry()
+
+	// Register some types without dependencies for example
+	registry.RegisterType("logger", func() Logger { return &SimpleLogger{} })
+	registry.RegisterType("database", func() Database { return &SimpleDatabase{Logger: &SimpleLogger{}} })
+	registry.RegisterType("service", func() Service {
+		return &SimpleService{DB: &SimpleDatabase{Logger: &SimpleLogger{}}, Logger: &SimpleLogger{}}
+	})
+
+	container := goldi.NewContainer(registry, map[string]interface{}{})
+
+	// 1. Range over func - iterate through registered types
+	fmt.Println("Registered types:")
+	for typeID := range registry.TypeIDs() {
+		fmt.Printf("- %s\n", typeID)
+	}
+
+	// 2. Improved Type Inference - no type assertions needed
+	logger, err := goldi.Get[Logger](container, "logger")
+	if err != nil {
+		panic(err)
+	}
+	logger.Log("Using improved type inference!")
+
+	// 3. slices.Collect - efficiently collect type IDs
+	allTypeIDs := registry.CollectTypeIDs()
+	fmt.Printf("Total registered types: %d\n", len(allTypeIDs))
+
+	// 4. Iterator-based warmup
+	err = container.WarmupCache()
+	if err != nil {
+		panic(err)
+	}
+
+	// 5. Check cached instances count
+	cachedCount := 0
+	for range container.CachedTypeIDs() {
+		cachedCount++
+	}
+	fmt.Printf("Cached instances count: %d\n", cachedCount)
+
+	// Output:
+	// Registered types:
+	// - logger
+	// - database
+	// - service
+	// LOG: Using improved type inference!
+	// Total registered types: 3
+	// Cached instances count: 3
+}
+
+// Test types for examples
+type Logger interface {
+	Log(string)
+}
+
+type SimpleLogger struct {
+	Name string
+}
+
+func (l *SimpleLogger) Log(msg string) {
+	fmt.Printf("LOG: %s\n", msg)
+}
+
+type Database interface {
+	Query(string) string
+}
+
+type SimpleDatabase struct {
+	Logger Logger
+}
+
+func (d *SimpleDatabase) Query(query string) string {
+	d.Logger.Log("Executing query: " + query)
+	return "result"
+}
+
+type Service interface {
+	Process(string) string
+}
+
+type SimpleService struct {
+	DB     Database
+	Logger Logger
+}
+
+func (s *SimpleService) Process(data string) string {
+	s.Logger.Log("Processing: " + data)
+	return s.DB.Query("SELECT * FROM data WHERE value = '" + data + "'")
+}
 
 func Example() {
 	// create a new container when your application loads
@@ -15,94 +109,99 @@ func Example() {
 		"some_parameter": "Hello World",
 		"timeout":        42.7,
 	}
+
+	// register a simple type with parameter
+	registry.RegisterType("logger", NewSimpleLoggerWithParam, "%some_parameter%")
+
+	// register a struct type
+	registry.RegisterType("httpClient", &http.Client{}, time.Second*5)
+
+	// you can also register already instantiated types
+	registry.InjectInstance("myInstance", &SimpleLogger{Name: "Foo"})
+
+	// create a new container with the registry and the config
 	container := goldi.NewContainer(registry, config)
 
-	// now define the types you want to build using the di container
-	// you can use simple structs
-	container.RegisterType("logger", &SimpleLogger{})
-	container.RegisterType("api.geo.client", new(GeoClient), "http://example.com/geo:1234")
+	// retrieve types from the container
+	logger := container.MustGet("logger").(*SimpleLogger)
+	fmt.Printf("logger.Name = %q\n", logger.Name)
 
-	// you can also use factory functions and parameters
-	container.RegisterType("acme_corp.mailer", NewAwesomeMailer, "first argument", "%some_parameter%")
-
-	// dynamic or static parameters and references to other services can be used as arguments
-	container.RegisterType("renderer", NewRenderer, "@logger")
-
-	// closures and functions are also possible
-	container.Register("http_handler", goldi.NewFuncType(func(w http.ResponseWriter, r *http.Request) {
-		// do amazing stuff
-	}))
-
-	// once you are done registering all your types you should probably validate the container
-	validator := validation.NewContainerValidator()
-	validator.MustValidate(container) // will panic, use validator.Validate to get the error
-
-	// whoever has access to the container can request these types now
-	logger := container.MustGet("logger").(LoggerInterface)
-	logger.DoStuff("...")
-
-	// in the tests you might want to exchange the registered types with mocks or other implementations
-	container.RegisterType("logger", NewNullLogger)
-
-	// if you already have an instance you want to be used you can inject it directly
-	myLogger := NewNullLogger()
-	container.InjectInstance("logger", myLogger)
+	// Output: logger.Name = "Hello World"
 }
 
-// Example_ prevents godoc from printing the whole content of this file as example
-func Example_() {}
+func ExampleContainer_RegisterType() {
+	registry := goldi.NewTypeRegistry()
+	config := map[string]interface{}{
+		"some_parameter": "Hello World",
+	}
 
-type LoggerInterface interface {
-	DoStuff(message string) string
+	// register a simple type with parameter
+	registry.RegisterType("logger", NewSimpleLoggerWithParam, "%some_parameter%")
+
+	// register a struct type
+	registry.RegisterType("httpClient", &http.Client{}, time.Second*5)
+
+	// you can also register already instantiated types
+	registry.InjectInstance("myInstance", &SimpleLogger{Name: "Foo"})
+
+	// create a new container with the registry and the config
+	container := goldi.NewContainer(registry, config)
+
+	// retrieve types from the container
+	logger := container.MustGet("logger").(*SimpleLogger)
+	fmt.Printf("logger.Name = %q\n", logger.Name)
+
+	// Output: logger.Name = "Hello World"
 }
 
-type LoggerProvider struct{}
+func ExampleContainer_MustGet() {
+	registry := goldi.NewTypeRegistry()
+	config := map[string]interface{}{
+		"some_parameter": "Hello World",
+	}
 
-func (p *LoggerProvider) GetLogger(name string) LoggerInterface {
-	return &SimpleLogger{name}
+	registry.RegisterType("logger", NewSimpleLoggerWithParam, "%some_parameter%")
+	container := goldi.NewContainer(registry, config)
+
+	logger := container.MustGet("logger").(*SimpleLogger)
+	fmt.Printf("logger.Name = %q\n", logger.Name)
+
+	// Output: logger.Name = "Hello World"
 }
 
-type SimpleLogger struct {
-	Name string
+func ExampleValidateContainer() {
+	registry := goldi.NewTypeRegistry()
+	config := map[string]interface{}{
+		"some_parameter": "Hello World",
+	}
+
+	registry.RegisterType("logger", NewSimpleLogger)
+
+	container := goldi.NewContainer(registry, config)
+
+	// this will return an error if the container can not be build successfully
+	err := validation.ValidateContainer(container)
+	if err != nil {
+		fmt.Printf("The container is invalid: %s", err)
+		return
+	}
+
+	fmt.Println("The container is valid")
+	// Output: The container is valid
 }
 
-func (l *SimpleLogger) DoStuff(input string) string { return input }
-
-type NullLogger struct{}
-
-func NewNullLogger() *NullLogger {
-	return &NullLogger{}
+func NewSimpleLogger() *SimpleLogger {
+	return &SimpleLogger{}
 }
 
-func (l *NullLogger) DoStuff(input string) string { return input }
-
-type AwesomeMailer struct {
-	arg1, arg2 string
+func NewSimpleLoggerWithParam(name string) *SimpleLogger {
+	return &SimpleLogger{Name: name}
 }
 
-func NewAwesomeMailer(arg1, arg2 string) *AwesomeMailer {
-	return &AwesomeMailer{arg1, arg2}
+type MyService struct {
+	Logger *SimpleLogger
 }
 
-type Renderer struct {
-	logger *LoggerInterface
+func NewMyService(logger *SimpleLogger) *MyService {
+	return &MyService{Logger: logger}
 }
-
-func NewRenderer(logger *LoggerInterface) *Renderer {
-	return &Renderer{logger}
-}
-
-type GeoClient struct {
-	BaseURL string
-}
-
-type TimePackageMock struct{}
-
-func (M *TimePackageMock) NewSystemClock() *time.Time {
-	now := time.Now()
-	return &now
-}
-
-type ExamplePackageMock struct{}
-
-func (M *ExamplePackageMock) HandleHTTP() {}

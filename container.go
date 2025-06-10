@@ -1,6 +1,11 @@
 package goldi
 
-import "fmt"
+import (
+	"fmt"
+	"iter"
+	"slices"
+	"sync"
+)
 
 // Container is the dependency injection container that can be used by your application to define and get types.
 //
@@ -13,15 +18,16 @@ type Container struct {
 	Config   map[string]interface{}
 	Resolver *ParameterResolver
 
-	typeCache map[string]interface{}
+	typeCache       sync.Map         // thread-safe cache for generated instances
+	reflectionCache *ReflectionCache // cache for reflection operations
 }
 
 // NewContainer creates a new container instance using the provided arguments
 func NewContainer(registry TypeRegistry, config map[string]interface{}) *Container {
 	c := &Container{
-		TypeRegistry: registry,
-		Config:       config,
-		typeCache:    map[string]interface{}{},
+		TypeRegistry:    registry,
+		Config:          config,
+		reflectionCache: NewReflectionCache(),
 	}
 
 	c.Resolver = NewParameterResolver(c)
@@ -30,7 +36,10 @@ func NewContainer(registry TypeRegistry, config map[string]interface{}) *Contain
 
 // MustGet behaves exactly like Get but will panic instead of returning an error
 // Since MustGet can only return interface{} you need to add a type assertion after the call:
-//     container.MustGet("logger").(LoggerInterface)
+//
+//	container.MustGet("logger").(LoggerInterface)
+//
+//go:inline
 func (c *Container) MustGet(typeID string) interface{} {
 	t, err := c.Get(typeID)
 	if err != nil {
@@ -62,10 +71,40 @@ func (c *Container) Get(typeID string) (interface{}, error) {
 	return instance, nil
 }
 
+// Get retrieves a type with improved type inference using Go 1.24 generics
+// This method provides compile-time type safety and eliminates the need for type assertions
+//
+//go:inline
+func Get[T any](c *Container, typeID string) (T, error) {
+	var zero T
+	instance, err := c.Get(typeID)
+	if err != nil {
+		return zero, err
+	}
+
+	// Type assertion with improved error handling
+	if typed, ok := instance.(T); ok {
+		return typed, nil
+	}
+
+	return zero, fmt.Errorf("goldi: type %q cannot be asserted to %T", typeID, zero)
+}
+
+// MustGet with improved type inference - panics on error but provides type safety
+//
+//go:inline
+func MustGet[T any](c *Container, typeID string) T {
+	result, err := Get[T](c, typeID)
+	if err != nil {
+		panic(err)
+	}
+	return result
+}
+
 func (c *Container) get(typeID string) (interface{}, bool, error) {
-	t, isCached := c.typeCache[typeID]
-	if isCached {
-		return t, true, nil
+	// Check cache first (thread-safe read)
+	if cached, ok := c.typeCache.Load(typeID); ok {
+		return cached, true, nil
 	}
 
 	generator, isDefined := c.TypeRegistry[typeID]
@@ -78,6 +117,77 @@ func (c *Container) get(typeID string) (interface{}, bool, error) {
 		return nil, false, fmt.Errorf("goldi: error while generating type %q: %s", typeID, err)
 	}
 
-	c.typeCache[typeID] = instance
+	// Store in cache (thread-safe write)
+	c.typeCache.Store(typeID, instance)
 	return instance, true, nil
+}
+
+// AllInstances returns an iterator over all cached instances
+// This uses Go 1.24's range over func feature for memory-efficient iteration
+func (c *Container) AllInstances() iter.Seq2[string, interface{}] {
+	return func(yield func(string, interface{}) bool) {
+		c.typeCache.Range(func(key, value interface{}) bool {
+			return yield(key.(string), value)
+		})
+	}
+}
+
+// CachedTypeIDs returns an iterator over all cached type IDs
+func (c *Container) CachedTypeIDs() iter.Seq[string] {
+	return func(yield func(string) bool) {
+		c.typeCache.Range(func(key, value interface{}) bool {
+			return yield(key.(string))
+		})
+	}
+}
+
+// GetMultiple efficiently retrieves multiple types using iterator pattern
+func (c *Container) GetMultiple(typeIDs iter.Seq[string]) iter.Seq2[string, interface{}] {
+	return func(yield func(string, interface{}) bool) {
+		for typeID := range typeIDs {
+			if instance, err := c.Get(typeID); err == nil {
+				if !yield(typeID, instance) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// WarmupCache pre-generates instances for all registered types
+func (c *Container) WarmupCache() error {
+	for typeID := range c.TypeRegistry.TypeIDs() {
+		if _, err := c.Get(typeID); err != nil {
+			return fmt.Errorf("failed to warmup type %q: %w", typeID, err)
+		}
+	}
+	return nil
+}
+
+// CollectCachedInstances efficiently collects all cached instances using slices.Collect
+func (c *Container) CollectCachedInstances() map[string]interface{} {
+	result := make(map[string]interface{})
+	c.typeCache.Range(func(key, value interface{}) bool {
+		result[key.(string)] = value
+		return true
+	})
+	return result
+}
+
+// CollectCachedTypeIDs efficiently collects all cached type IDs using slices.Collect
+func (c *Container) CollectCachedTypeIDs() []string {
+	return slices.Collect(c.CachedTypeIDs())
+}
+
+// GetAllInstances retrieves all registered types and returns them as a map
+func (c *Container) GetAllInstances() (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	for typeID := range c.TypeRegistry.TypeIDs() {
+		instance, err := c.Get(typeID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get instance for type %q: %w", typeID, err)
+		}
+		result[typeID] = instance
+	}
+	return result, nil
 }

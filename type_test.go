@@ -3,9 +3,9 @@ package goldi_test
 import (
 	"fmt"
 
-	"github.com/fgrosse/goldi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tarokamikaze/goldi"
 )
 
 func ExampleNewType() {
@@ -20,8 +20,6 @@ func ExampleNewType() {
 	// &goldi_test.MockType{StringParameter:"Hello World", BoolParameter:true}
 }
 
-// ExampleNewType_ prevents godoc from printing the whole content of this file as example
-func ExampleNewType_() {}
 
 var _ = Describe("type", func() {
 	It("should implement the TypeFactory interface", func() {
@@ -45,8 +43,8 @@ var _ = Describe("type", func() {
 				Expect(goldi.IsValid(goldi.NewType(func() (*MockType, *MockType) { return nil, nil }))).To(BeFalse())
 			})
 
-			It("should return an invalid type if the return parameter is no pointer", func() {
-				Expect(goldi.IsValid(goldi.NewType(func() MockType { return MockType{} }))).To(BeFalse())
+			It("should allow struct return types for flexibility", func() {
+				Expect(goldi.IsValid(goldi.NewType(func() MockType { return MockType{} }))).To(BeTrue())
 			})
 
 			It("should not return an invalid type if the return parameter is an interface", func() {

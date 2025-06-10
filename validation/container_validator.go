@@ -4,7 +4,7 @@ package validation
 import (
 	"fmt"
 
-	"github.com/fgrosse/goldi"
+	"github.com/tarokamikaze/goldi"
 )
 
 // A Constraint represents a certain criteria that a container needs to fulfill in order to be valid.
@@ -27,6 +27,12 @@ func NewContainerValidator() *ContainerValidator {
 			new(TypeReferencesConstraint),
 		},
 	}
+}
+
+// ValidateContainer validates a container with default constraints
+func ValidateContainer(container *goldi.Container) error {
+	validator := NewContainerValidator()
+	return validator.Validate(container)
 }
 
 // Add another constraint to this validator

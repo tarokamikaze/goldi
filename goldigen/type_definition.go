@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"unicode"
 )
@@ -114,7 +115,7 @@ func (t *TypeDefinition) PackageName() string {
 }
 
 func (t *TypeDefinition) Arguments() []string {
-	rawArgs := append(t.RawArguments, t.RawArgumentsShort...)
+	rawArgs := slices.Concat(t.RawArguments, t.RawArgumentsShort)
 	arguments := make([]string, len(rawArgs))
 	for i, arg := range rawArgs {
 		switch a := arg.(type) {

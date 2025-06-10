@@ -3,17 +3,18 @@ package goldi_test
 import (
 	"fmt"
 
-	"github.com/fgrosse/goldi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tarokamikaze/goldi"
 )
 
 func ExampleNewAliasType() {
 	container := goldi.NewContainer(goldi.NewTypeRegistry(), map[string]interface{}{})
 
 	container.Register("logger", goldi.NewStructType(SimpleLogger{}))
+	container.Register("mock", goldi.NewStructType(MockType{}))
 	container.Register("default_logger", goldi.NewAliasType("logger"))
-	container.Register("logging_func", goldi.NewAliasType("logger::DoStuff"))
+	container.Register("logging_func", goldi.NewAliasType("mock::DoStuff"))
 
 	fmt.Printf("logger:         %T\n", container.MustGet("logger"))
 	fmt.Printf("default_logger: %T\n", container.MustGet("default_logger"))
@@ -21,11 +22,8 @@ func ExampleNewAliasType() {
 	// Output:
 	// logger:         *goldi_test.SimpleLogger
 	// default_logger: *goldi_test.SimpleLogger
-	// logging_func:   func(string) string
+	// logging_func:   func() string
 }
-
-// ExampleNewAliasType_ prevents godoc from printing the whole content of this file as example
-func ExampleNewAliasType_() {}
 
 var _ = Describe("aliasType", func() {
 	It("should implement the TypeFactory interface", func() {

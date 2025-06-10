@@ -3,26 +3,23 @@ package goldi_test
 import (
 	"fmt"
 
-	"github.com/fgrosse/goldi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tarokamikaze/goldi"
 )
 
 func ExampleNewFuncReferenceType() {
 	container := goldi.NewContainer(goldi.NewTypeRegistry(), map[string]interface{}{})
 
-	logger := new(SimpleLogger)
-	container.Register("logger", goldi.NewInstanceType(logger))
-	container.Register("log_func", goldi.NewFuncReferenceType("logger", "DoStuff"))
+	mockType := &MockType{StringParameter: "Hello World"}
+	container.Register("mock", goldi.NewInstanceType(mockType))
+	container.Register("log_func", goldi.NewFuncReferenceType("mock", "DoStuff"))
 
-	f := container.MustGet("log_func").(func(string) string)
-	fmt.Println(f("Hello World")) // executes logger.DoStuff
+	f := container.MustGet("log_func").(func() string)
+	fmt.Println(f()) // executes mockType.DoStuff
 	// Output:
-	// Hello World
+	// I did stuff
 }
-
-// ExampleNewFuncReferenceType_ prevents godoc from printing the whole content of this file as example
-func ExampleNewFuncReferenceType_() {}
 
 var _ = Describe("funcReferenceType", func() {
 	It("should implement the TypeFactory interface", func() {

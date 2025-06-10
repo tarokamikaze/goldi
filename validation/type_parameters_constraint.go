@@ -3,7 +3,7 @@ package validation
 import (
 	"fmt"
 
-	"github.com/fgrosse/goldi"
+	"github.com/tarokamikaze/goldi"
 )
 
 // The TypeParametersConstraint is used in a ContainerValidator to check if all used parameters do exist.
@@ -33,7 +33,7 @@ func (c *TypeParametersConstraint) validateTypeParameters(typeID string, contain
 }
 
 func (c *TypeParametersConstraint) parameterArguments(allArguments []interface{}) []string {
-	var parameterArguments []string
+	parameterArguments := make([]string, 0, len(allArguments))
 	for _, argument := range allArguments {
 		stringArgument, isString := argument.(string)
 		if isString && goldi.IsParameter(stringArgument) {

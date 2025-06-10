@@ -3,9 +3,9 @@ package goldi_test
 import (
 	"net/http"
 
-	"github.com/fgrosse/goldi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tarokamikaze/goldi"
 )
 
 func ExampleNewFuncType() {
@@ -32,8 +32,6 @@ func ExampleNewFuncType() {
 	}
 }
 
-// ExampleNewFuncType_ prevents godoc from printing the whole content of this file as example
-func ExampleNewFuncType_() {}
 
 var _ = Describe("funcType", func() {
 	It("should implement the TypeFactory interface", func() {
