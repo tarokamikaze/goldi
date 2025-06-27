@@ -24,12 +24,13 @@ type typeFactory struct {
 //   - the number of given factoryParameters does not match the number of arguments of the factoryFunction
 //
 // Goldigen yaml syntax example:
-//     my_type:
-//         package: github.com/fgrosse/foobar
-//         factory: NewType
-//         args:
-//             - "Hello World"
-//             - true
+//
+//	my_type:
+//	    package: github.com/fgrosse/foobar
+//	    factory: NewType
+//	    args:
+//	        - "Hello World"
+//	        - true
 func NewType(factoryFunction interface{}, factoryParameters ...interface{}) TypeFactory {
 	if factoryFunction == nil {
 		return newInvalidType(fmt.Errorf("the given factoryFunction is nil"))
@@ -51,8 +52,10 @@ func newTypeFromFactoryFunction(function interface{}, factoryType reflect.Type, 
 	}
 
 	kindOfGeneratedType := factoryType.Out(0).Kind()
-	if kindOfGeneratedType != reflect.Interface && kindOfGeneratedType != reflect.Ptr && kindOfGeneratedType != reflect.Func {
-		return newInvalidType(fmt.Errorf("return parameter is no interface, pointer or function but a %v", kindOfGeneratedType))
+	// Allow more return types including basic types like string, int, etc.
+	// Only restrict channels and unsafe pointers which are problematic for DI
+	if kindOfGeneratedType == reflect.Chan || kindOfGeneratedType == reflect.UnsafePointer {
+		return newInvalidType(fmt.Errorf("return parameter type %v is not supported for dependency injection", kindOfGeneratedType))
 	}
 
 	if factoryType.IsVariadic() {
@@ -65,8 +68,10 @@ func newTypeFromFactoryFunction(function interface{}, factoryType reflect.Type, 
 		}
 	}
 
+	// Use cached reflection operations
+	cache := GetGlobalReflectionCache()
 	t := &typeFactory{
-		factory:     reflect.ValueOf(function),
+		factory:     cache.GetValue(function),
 		factoryType: factoryType,
 	}
 
@@ -81,7 +86,10 @@ func newTypeFromFactoryFunction(function interface{}, factoryType reflect.Type, 
 
 func buildFactoryCallArguments(t reflect.Type, allParameters []interface{}) ([]reflect.Value, error) {
 	actualNumberOfArgs := t.NumIn()
+
+	// Pre-allocate with known size for better performance
 	args := make([]reflect.Value, len(allParameters))
+
 	for i, argument := range allParameters {
 		var expectedArgumentType reflect.Type
 		if t.IsVariadic() && i >= actualNumberOfArgs-1 {
@@ -92,7 +100,9 @@ func buildFactoryCallArguments(t reflect.Type, allParameters []interface{}) ([]r
 			expectedArgumentType = t.In(i)
 		}
 
-		args[i] = reflect.ValueOf(argument)
+		// Use cached reflection operations
+		cache := GetGlobalReflectionCache()
+		args[i] = cache.GetValue(argument)
 		if args[i].Kind() != expectedArgumentType.Kind() {
 			if stringArg, isString := argument.(string); isString && !IsParameterOrTypeReference(stringArg) {
 				return nil, fmt.Errorf("input argument %d is of type %s but needs to be a %s", i+1, args[i].Kind(), expectedArgumentType.Kind())
@@ -135,6 +145,7 @@ func (t *typeFactory) generateFactoryArguments(resolver *ParameterResolver) ([]r
 		return t.generateVariadicFactoryArguments(resolver)
 	}
 
+	// Pre-allocate with known size for better performance
 	args := make([]reflect.Value, len(t.factoryArguments))
 	var err error
 
@@ -155,7 +166,9 @@ func (t *typeFactory) generateFactoryArguments(resolver *ParameterResolver) ([]r
 }
 
 func (t *typeFactory) generateVariadicFactoryArguments(resolver *ParameterResolver) ([]reflect.Value, error) {
-	args := make([]reflect.Value, t.factoryType.NumIn())
+	numIn := t.factoryType.NumIn()
+	// Pre-allocate with known size for better performance
+	args := make([]reflect.Value, numIn)
 	var err error
 
 	actualNumberOfArgs := t.factoryType.NumIn()

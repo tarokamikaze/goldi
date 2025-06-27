@@ -20,9 +20,10 @@ type structType struct {
 //   - the structParameters types do not match the fields of structT
 //
 // Goldigen yaml syntax example:
-//     logger:
-//         package: github.com/fgrosse/foobar
-//         type:    MyType
+//
+//	logger:
+//	    package: github.com/fgrosse/foobar
+//	    type:    MyType
 func NewStructType(structT interface{}, structParameters ...interface{}) TypeFactory {
 	if structT == nil {
 		return newInvalidType(fmt.Errorf("the given struct is nil"))
@@ -48,10 +49,12 @@ func newTypeFromStruct(generatedType reflect.Type, parameters []interface{}) Typ
 		))
 	}
 
+	// Use cached reflection operations
+	cache := GetGlobalReflectionCache()
 	args := make([]reflect.Value, len(parameters))
 	for i, argument := range parameters {
 		// TODO: check argument types
-		args[i] = reflect.ValueOf(argument)
+		args[i] = cache.GetValue(argument)
 	}
 
 	return &structType{
@@ -85,6 +88,7 @@ func (t *structType) Generate(parameterResolver *ParameterResolver) (interface{}
 }
 
 func (t *structType) generateTypeFields(parameterResolver *ParameterResolver) ([]reflect.Value, error) {
+	// Pre-allocate with known size for better performance
 	args := make([]reflect.Value, len(t.structFields))
 	var err error
 

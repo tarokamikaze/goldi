@@ -3,10 +3,17 @@ package goldi_test
 import (
 	"fmt"
 
-	"github.com/fgrosse/goldi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tarokamikaze/goldi"
 )
+
+// LoggerProvider provides logger instances
+type LoggerProvider struct{}
+
+func (lp *LoggerProvider) GetLogger(name string) *SimpleLogger {
+	return &SimpleLogger{Name: name}
+}
 
 // Let's assume that we have a LoggerProvider type that produces configured instances
 // of a Logger each time we call LoggerProvider.GetLogger(loggerName string).
@@ -26,9 +33,6 @@ func ExampleNewProxyType() {
 	// Output:
 	// My logger: *goldi_test.SimpleLogger
 }
-
-// ExampleNewProxyType_ prevents godoc from printing the whole content of this file as example
-func ExampleNewProxyType_() {}
 
 var _ = Describe("proxyType", func() {
 	It("should implement the TypeFactory interface", func() {

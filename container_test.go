@@ -3,10 +3,19 @@ package goldi_test
 import (
 	"fmt"
 
-	"github.com/fgrosse/goldi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tarokamikaze/goldi"
 )
+
+// NullLogger is a test logger that does nothing
+type NullLogger struct{}
+
+func (n *NullLogger) Log(msg string) {}
+
+func NewNullLogger() *NullLogger {
+	return &NullLogger{}
+}
 
 func ExampleContainer() {
 	registry := goldi.NewTypeRegistry()

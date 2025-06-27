@@ -3,7 +3,7 @@ package validation
 import (
 	"fmt"
 
-	"github.com/fgrosse/goldi"
+	"github.com/tarokamikaze/goldi"
 )
 
 // The NoInvalidTypesConstraint checks all types that none of the registered types is invalid

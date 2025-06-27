@@ -1,7 +1,7 @@
 package main_test
 
 import (
-	"github.com/fgrosse/goldi/goldigen"
+	"github.com/tarokamikaze/goldi/goldigen"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -139,14 +139,14 @@ var _ = Describe("TypesConfiguration", func() {
 				c := main.TypesConfiguration{
 					Types: map[string]main.TypeDefinition{
 						"some_goldi_type": {
-							Package: "github.com/fgrosse/goldi",
+							Package: "github.com/tarokamikaze/goldi",
 						},
 					},
 				}
 
-				packages := c.Packages("github.com/fgrosse/goldi")
+				packages := c.Packages("github.com/tarokamikaze/goldi")
 				Expect(packages).To(HaveLen(1))
-				Expect(packages).To(ContainElement("github.com/fgrosse/goldi"))
+				Expect(packages).To(ContainElement("github.com/tarokamikaze/goldi"))
 			})
 		})
 	})

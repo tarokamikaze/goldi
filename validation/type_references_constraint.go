@@ -3,7 +3,7 @@ package validation
 import (
 	"fmt"
 
-	"github.com/fgrosse/goldi"
+	"github.com/tarokamikaze/goldi"
 )
 
 // The TypeReferencesConstraint is used in a ContainerValidator to check if all referenced types in the container have been defined.
@@ -52,7 +52,7 @@ func (c *TypeReferencesConstraint) validateTypeReferences(typeID string, contain
 }
 
 func (c *TypeReferencesConstraint) typeReferenceArguments(allArguments []interface{}) []string {
-	var typeRefParameters []string
+	typeRefParameters := make([]string, 0, len(allArguments))
 	for _, argument := range allArguments {
 		stringArgument, isString := argument.(string)
 		if isString && goldi.IsTypeReference(stringArgument) {

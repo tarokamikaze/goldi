@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fgrosse/goldi/goldigen"
+	"github.com/tarokamikaze/goldi/goldigen"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -83,16 +83,16 @@ var _ = Describe("GoPathChecker", func() {
 			}
 
 			log("It should return the correct package name")
-			Expect(checker.PackageName("some_file.go")).To(Equal("github.com/fgrosse/goldi/goldigen"))
+			Expect(checker.PackageName("some_file.go")).To(Equal("github.com/tarokamikaze/goldi/goldigen"))
 
 			log("It should return the correct package name when navigating up the file tree")
-			Expect(checker.PackageName("../some_file.go")).To(Equal("github.com/fgrosse/goldi"))
+			Expect(checker.PackageName("../some_file.go")).To(Equal("github.com/tarokamikaze/goldi"))
 
 			log("It should return the correct package name when navigating up and down the file tree")
-			Expect(checker.PackageName("../goldigen/some_file.go")).To(Equal("github.com/fgrosse/goldi/goldigen"))
+			Expect(checker.PackageName("../goldigen/some_file.go")).To(Equal("github.com/tarokamikaze/goldi/goldigen"))
 
 			log("It should return the correct package name when navigating into different directories of the file tree")
-			Expect(checker.PackageName("../some_dir/some_file.go")).To(Equal("github.com/fgrosse/goldi/some_dir"))
+			Expect(checker.PackageName("../some_dir/some_file.go")).To(Equal("github.com/tarokamikaze/goldi/some_dir"))
 		})
 	})
 })

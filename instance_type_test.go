@@ -3,9 +3,9 @@ package goldi_test
 import (
 	"fmt"
 
-	"github.com/fgrosse/goldi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tarokamikaze/goldi"
 )
 
 func ExampleNewInstanceType() {
@@ -23,8 +23,6 @@ func ExampleNewInstanceType() {
 	// Foobar
 }
 
-// ExampleNewInstanceType_ prevents godoc from printing the whole content of this file as example
-func ExampleNewInstanceType_() {}
 
 var _ = Describe("instanceType", func() {
 	var resolver *goldi.ParameterResolver

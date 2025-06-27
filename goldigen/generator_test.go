@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fgrosse/goldi/goldigen"
+	"github.com/tarokamikaze/goldi/goldigen"
 	. "github.com/fgrosse/gomega-matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -118,7 +118,7 @@ var _ = Describe("Generator", func() {
 		})
 
 		It("should import the goldi package", func() {
-			Expect(output).To(ImportPackage("github.com/fgrosse/goldi"))
+			Expect(output).To(ImportPackage("github.com/tarokamikaze/goldi"))
 		})
 
 		It("should import the type packages", func() {

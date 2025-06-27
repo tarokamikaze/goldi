@@ -47,8 +47,10 @@ func (r *ParameterResolver) resolveParameter(parameter reflect.Value, stringPara
 		return parameter
 	}
 
+	// Use cached reflection operations
+	cache := GetGlobalReflectionCache()
 	parameter = reflect.New(expectedType).Elem()
-	parameter.Set(reflect.ValueOf(configuredValue))
+	parameter.Set(cache.GetValue(configuredValue))
 	return parameter
 }
 
@@ -69,7 +71,10 @@ func (r *ParameterResolver) resolveTypeReference(typeIDAndPrefix string, expecte
 	}
 
 	if t.IsFuncReference {
-		method := reflect.ValueOf(typeInstance).MethodByName(t.FuncReferenceMethod)
+		// Use cached reflection operations
+		cache := GetGlobalReflectionCache()
+		objValue := cache.GetValue(typeInstance)
+		method := objValue.MethodByName(t.FuncReferenceMethod)
 
 		if method.IsValid() == false {
 			return reflect.Value{}, newTypeReferenceError(t.ID, typeInstance, `the referenced method %q does not exist or is not exported`, t.Raw)
@@ -78,13 +83,16 @@ func (r *ParameterResolver) resolveTypeReference(typeIDAndPrefix string, expecte
 		return method, nil
 	}
 
-	if reflect.TypeOf(typeInstance).AssignableTo(expectedType) == false {
+	// Use cached reflection operations
+	cache := GetGlobalReflectionCache()
+	instanceType := cache.GetType(typeInstance)
+	if instanceType.AssignableTo(expectedType) == false {
 		return reflect.Value{}, newTypeReferenceError(t.ID, typeInstance,
 			`the referenced type %q (type %T) is not assignable to the expected type %v`, t.Raw, typeInstance, expectedType,
 		)
 	}
 
 	result := reflect.New(expectedType).Elem()
-	result.Set(reflect.ValueOf(typeInstance))
+	result.Set(cache.GetValue(typeInstance))
 	return result, nil
 }

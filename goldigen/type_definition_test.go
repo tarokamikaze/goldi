@@ -1,7 +1,7 @@
 package main_test
 
 import (
-	"github.com/fgrosse/goldi/goldigen"
+	"github.com/tarokamikaze/goldi/goldigen"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
